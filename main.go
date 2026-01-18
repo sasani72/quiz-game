@@ -13,13 +13,50 @@ import (
 
 func main() {
 	mux := http.DefaultServeMux
-	mux.HandleFunc("/users/register", userRegisterHandler)
 	mux.HandleFunc("/health-check", healthCheckHandler)
+	mux.HandleFunc("/users/register", userRegisterHandler)
+	mux.HandleFunc("/users/login", userLoginHandler)
 	server := http.Server{
 		Addr:    ":8080",
 		Handler: mux,
 	}
 	log.Fatal(server.ListenAndServe())
+}
+
+func userLoginHandler(writer http.ResponseWriter, request *http.Request) {
+	if request.Method != http.MethodPost {
+		fmt.Fprintf(writer, `"error": "invalid method"`)
+	}
+
+	data, err := io.ReadAll(request.Body)
+	if err != nil {
+		writer.Write([]byte(
+			fmt.Sprintf(`{"error": "%s"}`, err.Error()),
+		))
+
+		return
+	}
+
+	var lReq userservice.LoginRequest
+	err = json.Unmarshal(data, &lReq)
+	if err != nil {
+		writer.Write([]byte(
+			fmt.Sprintf(`{"error": "%s"}`, err.Error())))
+
+		return
+	}
+
+	mysqlRepo := mysql.New()
+	userSvc := userservice.New(mysqlRepo)
+	_, err = userSvc.Login(lReq)
+	if err != nil {
+		writer.Write([]byte(
+			fmt.Sprintf(`{"error": "%s"}`, err.Error())))
+
+		return
+	}
+
+	writer.Write([]byte(`{"message": "user credentials are ok"}`))
 }
 
 func userRegisterHandler(writer http.ResponseWriter, req *http.Request) {
