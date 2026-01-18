@@ -11,7 +11,7 @@ type Repository interface {
 	Register(u entity.User) (entity.User, error)
 }
 type Service struct {
-	Repository Repository
+	repo Repository
 }
 
 type RegisterRequest struct {
@@ -23,6 +23,10 @@ type RegisterResponse struct {
 	User entity.User
 }
 
+func New(repo Repository) Service {
+	return Service{repo: repo}
+}
+
 func (s Service) Register(req RegisterRequest) (RegisterResponse, error) {
 	// TODO - we should verify phone number by verification code
 	// validate phone num
@@ -31,7 +35,7 @@ func (s Service) Register(req RegisterRequest) (RegisterResponse, error) {
 	}
 
 	// check unique phone
-	if isUnique, err := s.Repository.IsPhoneNumberUnique(req.PhoneNumber); err != nil || !isUnique {
+	if isUnique, err := s.repo.IsPhoneNumberUnique(req.PhoneNumber); err != nil || !isUnique {
 		if err != nil {
 			return RegisterResponse{}, fmt.Errorf("unexpected error: %v", err)
 		}
@@ -44,7 +48,7 @@ func (s Service) Register(req RegisterRequest) (RegisterResponse, error) {
 		return RegisterResponse{}, fmt.Errorf("name should be at least 3 characters long")
 	}
 	// create new user in storage
-	createdUser, err := s.Repository.Register(entity.User{
+	createdUser, err := s.repo.Register(entity.User{
 		Name:        req.Name,
 		PhoneNumber: req.PhoneNumber,
 	})
