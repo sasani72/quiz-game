@@ -14,6 +14,7 @@ type Repository interface {
 	IsPhoneNumberUnique(phoneNumber string) (bool, error)
 	Register(u entity.User) (entity.User, error)
 	GetUserByPhoneNumber(phoneNumber string) (entity.User, bool, error)
+	GetUserByID(userID uint) (entity.User, error)
 }
 type Service struct {
 	repo Repository
@@ -85,7 +86,7 @@ type LoginResponse struct {
 }
 
 func (s Service) Login(req LoginRequest) (LoginResponse, error) {
-	// TODO - maybe its better to use two separate methods for user existence and
+	// TODO - maybe its better to use two separate methods for user existence and get user by phone
 	user, exist, err := s.repo.GetUserByPhoneNumber(req.PhoneNumber)
 	if err != nil {
 		return LoginResponse{}, fmt.Errorf("unexpected error: %w", err)
@@ -96,6 +97,25 @@ func (s Service) Login(req LoginRequest) (LoginResponse, error) {
 	}
 
 	return LoginResponse{}, nil
+}
+
+type ProfileRequest struct {
+	UserID uint
+}
+
+type ProfileResponse struct {
+	Name string `json:"name"`
+}
+
+// all request inputs for interactor/service should be sanitized.
+func (s Service) Profile(req ProfileRequest) (ProfileResponse, error) {
+	user, err := s.repo.GetUserByID(req.UserID)
+	if err != nil {
+		// TODO - we need rich error
+		return ProfileResponse{}, fmt.Errorf("unexpected error: %w", err)
+	}
+
+	return ProfileResponse{user.Name}, nil
 }
 
 func getMD5Hash(text string) string {
