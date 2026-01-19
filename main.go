@@ -6,9 +6,18 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"quiz-game/entity"
 	"quiz-game/repository/mysql"
+	"quiz-game/service/authservice"
 	"quiz-game/service/userservice"
+	"time"
+)
+
+const (
+	JwtSigningKey              = "jwt_secret"
+	AccessTokenSubject         = "at"
+	RefreshTokenSubject        = "rt"
+	AccessTokenExpireDuration  = time.Hour * 24
+	RefreshTokenExpireDuration = time.Hour * 24 * 7
 )
 
 func main() {
@@ -16,11 +25,45 @@ func main() {
 	mux.HandleFunc("/health-check", healthCheckHandler)
 	mux.HandleFunc("/users/register", userRegisterHandler)
 	mux.HandleFunc("/users/login", userLoginHandler)
+	mux.HandleFunc("/users/profile", userProfileHandler)
 	server := http.Server{
 		Addr:    ":8080",
 		Handler: mux,
 	}
 	log.Fatal(server.ListenAndServe())
+}
+
+func userProfileHandler(writer http.ResponseWriter, request *http.Request) {
+	if request.Method != http.MethodGet {
+		fmt.Fprintf(writer, `"error": "invalid method"`)
+	}
+
+	authSvc := authservice.New(JwtSigningKey, AccessTokenSubject, RefreshTokenSubject,
+		AccessTokenExpireDuration, RefreshTokenExpireDuration)
+
+	authToken := request.Header.Get("Authorization")
+	claims, err := authSvc.ParseToken(authToken)
+	if err != nil {
+		fmt.Fprintf(writer, `"error": "invalid authorization token"`)
+	}
+
+	mysqlRepo := mysql.New()
+	userSvc := userservice.New(authSvc, mysqlRepo)
+
+	resp, err := userSvc.Profile(userservice.ProfileRequest{UserID: claims.UserID})
+	if err != nil {
+		writer.Write([]byte(
+			fmt.Sprintf(`{"error": "%s"}`, err.Error())))
+
+		return
+	}
+
+	data, err := json.Marshal(resp)
+	if err != nil {
+		writer.Write([]byte(
+			fmt.Sprintf(`{"error": "%s"}`, err.Error())))
+	}
+	writer.Write(data)
 }
 
 func userLoginHandler(writer http.ResponseWriter, request *http.Request) {
@@ -46,9 +89,12 @@ func userLoginHandler(writer http.ResponseWriter, request *http.Request) {
 		return
 	}
 
+	authSvc := authservice.New(JwtSigningKey, AccessTokenSubject, RefreshTokenSubject,
+		AccessTokenExpireDuration, RefreshTokenExpireDuration)
+
 	mysqlRepo := mysql.New()
-	userSvc := userservice.New(mysqlRepo)
-	_, err = userSvc.Login(lReq)
+	userSvc := userservice.New(authSvc, mysqlRepo)
+	resp, err := userSvc.Login(lReq)
 	if err != nil {
 		writer.Write([]byte(
 			fmt.Sprintf(`{"error": "%s"}`, err.Error())))
@@ -56,7 +102,14 @@ func userLoginHandler(writer http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	writer.Write([]byte(`{"message": "user credentials are ok"}`))
+	data, err = json.Marshal(resp)
+	if err != nil {
+		writer.Write([]byte(
+			fmt.Sprintf(`{"error": "%s"}`, err.Error())))
+		return
+	}
+
+	writer.Write(data)
 }
 
 func userRegisterHandler(writer http.ResponseWriter, req *http.Request) {
@@ -82,8 +135,11 @@ func userRegisterHandler(writer http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	authSvc := authservice.New(JwtSigningKey, AccessTokenSubject, RefreshTokenSubject,
+		AccessTokenExpireDuration, RefreshTokenExpireDuration)
+
 	mysqlRepo := mysql.New()
-	userSvc := userservice.New(mysqlRepo)
+	userSvc := userservice.New(authSvc, mysqlRepo)
 	_, err = userSvc.Register(uReq)
 	if err != nil {
 		writer.Write([]byte(
@@ -97,13 +153,4 @@ func userRegisterHandler(writer http.ResponseWriter, req *http.Request) {
 
 func healthCheckHandler(writer http.ResponseWriter, req *http.Request) {
 	fmt.Fprintf(writer, `{"message": "OK"`)
-}
-
-func testUserMysqlRepo() {
-	mysqlRepo := mysql.New()
-
-	mysqlRepo.Register(entity.User{
-		PhoneNumber: "0912",
-		Name:        "Test User",
-	})
 }

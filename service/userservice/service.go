@@ -7,7 +7,8 @@ import (
 	"quiz-game/entity"
 	"quiz-game/pkg/phonenumber"
 
-	"golang.org/x/crypto/bcrypt"
+	//"golang.org/x/crypto/bcrypt"
+	jwt "github.com/golang-jwt/jwt/v4"
 )
 
 type Repository interface {
@@ -16,7 +17,13 @@ type Repository interface {
 	GetUserByPhoneNumber(phoneNumber string) (entity.User, bool, error)
 	GetUserByID(userID uint) (entity.User, error)
 }
+
+type AuthGenerator interface {
+	CreateAccessToken(user entity.User) (string, error)
+	CreateRefreshToken(user entity.User) (string, error)
+}
 type Service struct {
+	auth AuthGenerator
 	repo Repository
 }
 
@@ -30,8 +37,8 @@ type RegisterResponse struct {
 	User entity.User
 }
 
-func New(repo Repository) Service {
-	return Service{repo: repo}
+func New(auth AuthGenerator, repo Repository) Service {
+	return Service{auth: auth, repo: repo}
 }
 
 func (s Service) Register(req RegisterRequest) (RegisterResponse, error) {
@@ -83,6 +90,8 @@ type LoginRequest struct {
 }
 
 type LoginResponse struct {
+	AccessToken  string `json:"access_token"`
+	RefreshToken string `json:"refresh_token"`
 }
 
 func (s Service) Login(req LoginRequest) (LoginResponse, error) {
@@ -96,7 +105,15 @@ func (s Service) Login(req LoginRequest) (LoginResponse, error) {
 		return LoginResponse{}, fmt.Errorf("username or password is invalid")
 	}
 
-	return LoginResponse{}, nil
+	accessToken, err := s.auth.CreateAccessToken(user)
+	if err != nil {
+		return LoginResponse{}, fmt.Errorf("unexpected error: %w", err)
+	}
+	refreshToken, err := s.auth.CreateRefreshToken(user)
+	if err != nil {
+		return LoginResponse{}, fmt.Errorf("unexpected error: %w", err)
+	}
+	return LoginResponse{accessToken, refreshToken}, nil
 }
 
 type ProfileRequest struct {
