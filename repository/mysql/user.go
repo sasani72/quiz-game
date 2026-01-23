@@ -63,6 +63,6 @@ func (d *MySQLDB) Register(u entity.User) (entity.User, error) {
 func scanUser(row *sql.Row) (entity.User, error) {
 	user := entity.User{}
 	var createdAt []uint8
-	err := row.Scan(&user.ID, &user.Name, &user.PhoneNumber, &user.Password, &createdAt)
+	err := row.Scan(&user.ID, &user.Name, &user.PhoneNumber, &createdAt, &user.Password)
 	return user, err
 }
