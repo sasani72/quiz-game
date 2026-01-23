@@ -6,9 +6,7 @@ import (
 	"fmt"
 	"quiz-game/entity"
 	"quiz-game/pkg/phonenumber"
-
 	//"golang.org/x/crypto/bcrypt"
-	jwt "github.com/golang-jwt/jwt/v4"
 )
 
 type Repository interface {
@@ -33,8 +31,14 @@ type RegisterRequest struct {
 	Password    string `json:"password"`
 }
 
+type RegisteredUser struct {
+	ID          uint   `json:"id"`
+	PhoneNumber string `json:"phone_number"`
+	Name        string `json:"name"`
+}
+
 type RegisterResponse struct {
-	User entity.User
+	User RegisteredUser `json:"user"`
 }
 
 func New(auth AuthGenerator, repo Repository) Service {
@@ -81,7 +85,11 @@ func (s Service) Register(req RegisterRequest) (RegisterResponse, error) {
 		return RegisterResponse{}, fmt.Errorf("unexpected error: %v", err)
 	}
 	// return user
-	return RegisterResponse{createdUser}, nil
+	return RegisterResponse{RegisteredUser{
+		ID:          createdUser.ID,
+		Name:        createdUser.Name,
+		PhoneNumber: createdUser.PhoneNumber,
+	}}, nil
 }
 
 type LoginRequest struct {
