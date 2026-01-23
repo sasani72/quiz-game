@@ -33,7 +33,10 @@ func (s Server) Serve() {
 
 	// Routes
 	e.GET("/health-check", s.healthCheck)
-	e.POST("/users/register", s.userRegister)
+	userGroup := e.Group("/users")
+	userGroup.POST("/login", s.userLogin)
+	userGroup.POST("/register", s.userRegister)
+	userGroup.GET("/profile", s.userProfile)
 
 	e.Logger.Fatal(e.Start(fmt.Sprintf(":%d", s.config.HTTPServer.Port)))
 }
