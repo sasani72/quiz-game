@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"quiz-game/config"
 	"quiz-game/delivery/httpserver"
 	"quiz-game/repository/mysql"
@@ -31,15 +32,18 @@ func main() {
 			Username: "gameapp",
 			Password: "root",
 			Host:     "localhost",
-			Port:     3306,
+			Port:     3308,
 			DBName:   "gameapp_db",
 		},
 	}
 
+	// add command for migrations
+	//mgr := migrator.New(cfg.MySQL)
+	//mgr.Up()
 	authSvc, userSvc := setupServices(cfg)
 
 	server := httpserver.New(cfg, authSvc, userSvc)
-
+	fmt.Println("start echo server")
 	server.Serve()
 }
 
