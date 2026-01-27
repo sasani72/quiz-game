@@ -4,12 +4,12 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
+	"quiz-game/dto"
 	"quiz-game/entity"
-	"quiz-game/pkg/phonenumber"
+	"quiz-game/pkg/richerror"
 )
 
 type Repository interface {
-	IsPhoneNumberUnique(phoneNumber string) (bool, error)
 	Register(u entity.User) (entity.User, error)
 	GetUserByPhoneNumber(phoneNumber string) (entity.User, bool, error)
 	GetUserByID(userID uint) (entity.User, error)
@@ -24,53 +24,11 @@ type Service struct {
 	repo Repository
 }
 
-type RegisterRequest struct {
-	Name        string `json:"name"`
-	PhoneNumber string `json:"phone_number"`
-	Password    string `json:"password"`
-}
-
-type UserInfo struct {
-	ID          uint   `json:"id"`
-	PhoneNumber string `json:"phone_number"`
-	Name        string `json:"name"`
-}
-
-type RegisterResponse struct {
-	User UserInfo `json:"user"`
-}
-
 func New(auth AuthGenerator, repo Repository) Service {
 	return Service{auth: auth, repo: repo}
 }
 
-func (s Service) Register(req RegisterRequest) (RegisterResponse, error) {
-	// TODO - we should verify phone number by verification code
-	// validate phone num
-	if !phonenumber.IsValid(req.PhoneNumber) {
-		return RegisterResponse{}, fmt.Errorf("invalid phone number")
-	}
-
-	// check unique phone
-	if isUnique, err := s.repo.IsPhoneNumberUnique(req.PhoneNumber); err != nil || !isUnique {
-		if err != nil {
-			return RegisterResponse{}, fmt.Errorf("unexpected error: %v", err)
-		}
-		if !isUnique {
-			return RegisterResponse{}, fmt.Errorf("phone number %s is already used", req.PhoneNumber)
-		}
-	}
-	// validate name
-	if len(req.Name) < 3 {
-		return RegisterResponse{}, fmt.Errorf("name should be at least 3 characters long")
-	}
-
-	// TODO - check pass with regex pattern
-	//validate password
-	if len(req.Password) < 8 {
-		return RegisterResponse{}, fmt.Errorf("password should be at least 8 characters long")
-	}
-
+func (s Service) Register(req dto.RegisterRequest) (dto.RegisterResponse, error) {
 	// TODO - replace md5 with bcrypt
 	//pass := []byte(req.Password)
 	//bcrypt.GenerateFromPassword(pass, 0)
@@ -81,10 +39,10 @@ func (s Service) Register(req RegisterRequest) (RegisterResponse, error) {
 		Password:    getMD5Hash(req.Password),
 	})
 	if err != nil {
-		return RegisterResponse{}, fmt.Errorf("unexpected error: %v", err)
+		return dto.RegisterResponse{}, fmt.Errorf("unexpected error: %v", err)
 	}
 	// return user
-	return RegisterResponse{UserInfo{
+	return dto.RegisterResponse{dto.UserInfo{
 		ID:          createdUser.ID,
 		Name:        createdUser.Name,
 		PhoneNumber: createdUser.PhoneNumber,
@@ -101,15 +59,17 @@ type Tokens struct {
 	RefreshToken string `json:"refresh_token"`
 }
 type LoginResponse struct {
-	User   UserInfo `json:"user"`
-	Tokens Tokens   `json:"tokens"`
+	User   dto.UserInfo `json:"user"`
+	Tokens Tokens       `json:"tokens"`
 }
 
 func (s Service) Login(req LoginRequest) (LoginResponse, error) {
+	const op = "userservice.Login"
 	// TODO - maybe its better to use two separate methods for user existence and get user by phone
 	user, exist, err := s.repo.GetUserByPhoneNumber(req.PhoneNumber)
 	if err != nil {
-		return LoginResponse{}, fmt.Errorf("unexpected error: %w", err)
+		return LoginResponse{}, richerror.New(op).WithErr(err).
+			WithMeta(map[string]interface{}{"phone_number": req.PhoneNumber})
 	}
 
 	if !exist || user.Password != getMD5Hash(req.Password) {
@@ -125,7 +85,7 @@ func (s Service) Login(req LoginRequest) (LoginResponse, error) {
 		return LoginResponse{}, fmt.Errorf("unexpected error: %w", err)
 	}
 	return LoginResponse{
-		User: UserInfo{
+		User: dto.UserInfo{
 			ID:          user.ID,
 			PhoneNumber: user.PhoneNumber,
 			Name:        user.Name,
@@ -147,10 +107,12 @@ type ProfileResponse struct {
 
 // all request inputs for interactor/service should be sanitized.
 func (s Service) Profile(req ProfileRequest) (ProfileResponse, error) {
+	const op = "userservice.Profile"
 	user, err := s.repo.GetUserByID(req.UserID)
 	if err != nil {
-		// TODO - we need rich error
-		return ProfileResponse{}, fmt.Errorf("unexpected error: %w", err)
+		return ProfileResponse{}, richerror.New(op).
+			WithErr(err).
+			WithMeta(map[string]interface{}{"req": req})
 	}
 
 	return ProfileResponse{user.Name}, nil

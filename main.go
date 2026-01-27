@@ -7,6 +7,7 @@ import (
 	"quiz-game/repository/mysql"
 	"quiz-game/service/authservice"
 	"quiz-game/service/userservice"
+	"quiz-game/validator/uservalidator"
 	"time"
 )
 
@@ -40,18 +41,20 @@ func main() {
 	// add command for migrations
 	//mgr := migrator.New(cfg.MySQL)
 	//mgr.Up()
-	authSvc, userSvc := setupServices(cfg)
+	authSvc, userSvc, userValidator := setupServices(cfg)
 
-	server := httpserver.New(cfg, authSvc, userSvc)
+	server := httpserver.New(cfg, authSvc, userSvc, userValidator)
 	fmt.Println("start echo server")
 	server.Serve()
 }
 
-func setupServices(cfg config.Config) (authservice.Service, userservice.Service) {
+func setupServices(cfg config.Config) (authservice.Service, userservice.Service, uservalidator.Validator) {
 	authSvc := authservice.New(cfg.Auth)
 
 	mysqlRepo := mysql.New(cfg.MySQL)
 	userSvc := userservice.New(authSvc, mysqlRepo)
 
-	return authSvc, userSvc
+	uV := uservalidator.New(mysqlRepo)
+
+	return authSvc, userSvc, uV
 }
