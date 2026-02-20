@@ -1,4 +1,4 @@
-package dto
+package param
 
 type LoginRequest struct {
 	PhoneNumber string `json:"phone_number"`
@@ -6,6 +6,6 @@ type LoginRequest struct {
 }
 
 type LoginResponse struct {
-	User   dto.UserInfo `json:"user"`
-	Tokens Tokens       `json:"tokens"`
+	User   UserInfo `json:"user"`
+	Tokens Tokens   `json:"tokens"`
 }

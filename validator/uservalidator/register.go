@@ -1,7 +1,7 @@
 package uservalidator
 
 import (
-	"quiz-game/dto"
+	"quiz-game/param"
 	"quiz-game/pkg/errmsg"
 	"quiz-game/pkg/richerror"
 	"regexp"
@@ -9,7 +9,7 @@ import (
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 )
 
-func (v Validator) ValidateRegisterRequest(req dto.RegisterRequest) (map[string]string, error) {
+func (v Validator) ValidateRegisterRequest(req param.RegisterRequest) (map[string]string, error) {
 	const op = "uservalidator.ValidateRegisterRequest"
 
 	if err := validation.ValidateStruct(&req,

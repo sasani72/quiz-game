@@ -2,11 +2,11 @@ package userservice
 
 import (
 	"fmt"
-	"quiz-game/dto"
 	"quiz-game/entity"
+	"quiz-game/param"
 )
 
-func (s Service) Register(req dto.RegisterRequest) (dto.RegisterResponse, error) {
+func (s Service) Register(req param.RegisterRequest) (param.RegisterResponse, error) {
 	// TODO - replace md5 with bcrypt
 	//pass := []byte(req.Password)
 	//bcrypt.GenerateFromPassword(pass, 0)
@@ -17,10 +17,10 @@ func (s Service) Register(req dto.RegisterRequest) (dto.RegisterResponse, error)
 		Password:    getMD5Hash(req.Password),
 	})
 	if err != nil {
-		return dto.RegisterResponse{}, fmt.Errorf("unexpected error: %v", err)
+		return param.RegisterResponse{}, fmt.Errorf("unexpected error: %v", err)
 	}
 	// return user
-	return dto.RegisterResponse{dto.UserInfo{
+	return param.RegisterResponse{param.UserInfo{
 		ID:          createdUser.ID,
 		Name:        createdUser.Name,
 		PhoneNumber: createdUser.PhoneNumber,
