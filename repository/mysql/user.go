@@ -23,21 +23,24 @@ func (d *MySQLDB) IsPhoneNumberUnique(phoneNumber string) (bool, error) {
 	return false, nil
 }
 
-func (d *MySQLDB) GetUserByPhoneNumber(phoneNumber string) (entity.User, bool, error) {
+func (d *MySQLDB) GetUserByPhoneNumber(phoneNumber string) (entity.User, error) {
 	const op = "mysql.getUserByPhoneNumber"
 	row := d.db.QueryRow(`select * from users where phone_number = ?`, phoneNumber)
 	user, err := scanUser(row)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return entity.User{}, false, nil
+			return entity.User{}, richerror.New(op).WithErr(err).
+				WithMessage(errmsg.NotFound).
+				WithKind(richerror.KindNotFound)
 		}
 
-		return entity.User{}, false, richerror.New(op).WithErr(err).
+		// TODO - log unexpected error for better observability
+		return entity.User{}, richerror.New(op).WithErr(err).
 			WithMessage(errmsg.CantScanQueryResult).
 			WithKind(richerror.KindUnexpected)
 	}
 
-	return user, true, nil
+	return user, nil
 }
 
 func (d *MySQLDB) GetUserByID(userID uint) (entity.User, error) {

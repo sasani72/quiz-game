@@ -6,4 +6,5 @@ const (
 	SomethingWentWrong   = "something went wrong"
 	PhoneNumberNotUnique = "phone number is not unique"
 	InvalidInput         = "invalid input"
+	InvalidPhoneNumber   = "invalid phone number"
 )
