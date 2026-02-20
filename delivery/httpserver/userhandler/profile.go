@@ -3,22 +3,19 @@ package userhandler
 import (
 	"net/http"
 	"quiz-game/param"
+	"quiz-game/pkg/constant"
 	"quiz-game/pkg/httpmsg"
+	"quiz-game/service/authservice"
 
 	"github.com/labstack/echo/v4"
 )
 
-func (h Handler) userProfile(c echo.Context) error {
-	var req param.ProfileRequest
-	if err := c.Bind(&req); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
-	}
+func getClaims(c echo.Context) *authservice.Claims {
+	return c.Get(constant.AuthMiddlewareContextKey).(*authservice.Claims)
+}
 
-	authToken := c.Request().Header.Get("Authorization")
-	claims, err := h.authSvc.ParseToken(authToken)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
-	}
+func (h Handler) userProfile(c echo.Context) error {
+	claims := getClaims(c)
 	resp, err := h.userSvc.Profile(param.ProfileRequest{UserID: claims.UserID})
 	if err != nil {
 		msg, code := httpmsg.Error(err)
