@@ -4,7 +4,6 @@ import (
 	"net/http"
 	"quiz-game/dto"
 	"quiz-game/pkg/httpmsg"
-	"quiz-game/service/userservice"
 
 	"github.com/labstack/echo/v4"
 )
@@ -33,7 +32,7 @@ func (s Server) userRegister(c echo.Context) error {
 }
 
 func (s Server) userLogin(c echo.Context) error {
-	var req userservice.LoginRequest
+	var req dto.LoginRequest
 	if err := c.Bind(&req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
@@ -47,7 +46,7 @@ func (s Server) userLogin(c echo.Context) error {
 }
 
 func (s Server) userProfile(c echo.Context) error {
-	var req userservice.ProfileRequest
+	var req dto.ProfileRequest
 	if err := c.Bind(&req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
@@ -57,7 +56,7 @@ func (s Server) userProfile(c echo.Context) error {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
 	}
-	resp, err := s.userSvc.Profile(userservice.ProfileRequest{UserID: claims.UserID})
+	resp, err := s.userSvc.Profile(dto.ProfileRequest{UserID: claims.UserID})
 	if err != nil {
 		msg, code := httpmsg.Error(err)
 		return echo.NewHTTPError(code, msg)
