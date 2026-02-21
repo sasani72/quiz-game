@@ -18,8 +18,9 @@ func Load(path string) *Config {
 	k.Load(file.Provider(path), yaml.Parser())
 
 	k.Load(env.Provider("GAMEAPP_", ".", func(s string) string {
-		return strings.Replace(strings.ToLower(
+		str := strings.Replace(strings.ToLower(
 			strings.TrimPrefix(s, "GAMEAPP_")), "_", ".", -1)
+		return strings.Replace(str, "..", "_", -1)
 	}), nil)
 
 	var cfg Config
