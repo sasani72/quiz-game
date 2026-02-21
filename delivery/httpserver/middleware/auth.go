@@ -1,7 +1,7 @@
 package middleware
 
 import (
-	"quiz-game/pkg/constant"
+	cfg "quiz-game/config"
 	"quiz-game/service/authservice"
 
 	mw "github.com/labstack/echo-jwt/v4"
@@ -10,7 +10,7 @@ import (
 
 func Auth(service authservice.Service, config authservice.Config) echo.MiddlewareFunc {
 	return mw.WithConfig(mw.Config{
-		ContextKey:    constant.AuthMiddlewareContextKey,
+		ContextKey:    cfg.AuthMiddlewareContextKey,
 		SigningKey:    []byte(config.SignKey),
 		SigningMethod: "HS256",
 		ParseTokenFunc: func(c echo.Context, auth string) (interface{}, error) {

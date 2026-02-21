@@ -20,6 +20,9 @@ const (
 )
 
 func main() {
+	cfg2 := config.Load("config.yml")
+	fmt.Println(cfg2)
+
 	cfg := config.Config{
 		HTTPServer: config.HTTPServer{Port: 8088},
 		Auth: authservice.Config{
