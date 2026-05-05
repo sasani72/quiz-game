@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"quiz-game/config"
 	"quiz-game/delivery/httpserver"
+	"quiz-game/repository/migrator"
 	"quiz-game/repository/mysql"
 	"quiz-game/service/authservice"
 	"quiz-game/service/userservice"
@@ -42,8 +43,8 @@ func main() {
 	}
 
 	// add command for migrations
-	//mgr := migrator.New(cfg.MySQL)
-	//mgr.Up()
+	mgr := migrator.New(cfg.MySQL)
+	mgr.Up()
 	authSvc, userSvc, userValidator := setupServices(cfg)
 
 	server := httpserver.New(cfg, authSvc, userSvc, userValidator)
